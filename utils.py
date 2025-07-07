@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # --- CONSTANTES PARA OPENROUTER ---
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL_NAME = "google/gemini-flash-1.5"
+MODEL_NAME = "mistralai/mistral-7b-instruct:free"
 
 # --- FUNCIONES DE AYUDA ---
 
