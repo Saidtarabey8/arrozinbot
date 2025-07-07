@@ -13,9 +13,8 @@ logger = logging.getLogger(__name__)
 
 # --- CONSTANTES PARA OPENROUTER ---
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-# --- CAMBIO DE MODELO ---
-# Usamos un modelo diferente que puede ser más fiable para seguir instrucciones complejas.
-MODEL_NAME = "google/gemma-7b-it:free"
+# --- CAMBIO DE MODELO A UNO PROFESIONAL Y FIABLE ---
+MODEL_NAME = "openai/gpt-3.5-turbo"
 
 # --- FUNCIONES DE AYUDA ---
 
@@ -48,11 +47,11 @@ def get_bcv_rate():
     except requests.RequestException:
         return None
 
-# --- PROMPT DEL SISTEMA (VERSIÓN ULTRA REFORZADA) ---
+# --- PROMPT DEL SISTEMA (SIMPLIFICADO PARA EL NUEVO MODELO) ---
 BCV_RATE = get_bcv_rate() or 40.0
 SYSTEM_PROMPT = f"""
 ### ROL Y PERSONALIDAD ###
-Actúa como ArrozinBot, el asistente de "La ArroZeria". Tu personalidad es SIEMPRE alegre, amigable y eficiente. Usa emojis 🤖🍜🔥. Habla de forma informal pero profesional.
+Actúa como ArrozinBot, el carismático y eficiente asistente de "La ArroZeria". Tu personalidad es SIEMPRE alegre, amigable y eficiente. Usa emojis 🤖🍜🔥. Habla de forma informal pero profesional.
 
 ### FLUJO DE CONVERSACIÓN OBLIGATORIO ###
 1.  **SALUDA** y **PREGUNTA** si es para Recoger o Delivery.
