@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 # --- CONSTANTES PARA OPENROUTER ---
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-# --- CAMBIO DE MODELO A UNO PROFESIONAL Y FIABLE ---
 MODEL_NAME = "openai/gpt-3.5-turbo"
 
 # --- FUNCIONES DE AYUDA ---
@@ -102,7 +101,15 @@ Actúa como ArrozinBot, el carismático y eficiente asistente de "La ArroZeria".
 
 async def get_ia_response(history: list) -> str:
     """Obtiene una respuesta de un modelo en OpenRouter."""
-    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
+    # --- SECCIÓN CORREGIDA ---
+    # Añadimos las cabeceras de identificación que OpenRouter recomienda.
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://arrozeria.com", # Puedes dejar esto así, es para identificar tu proyecto.
+        "X-Title": "ArrozinBot" # El nombre de tu app.
+    }
+    
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
     data = {"model": MODEL_NAME, "messages": messages}
     try:
