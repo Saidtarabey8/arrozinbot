@@ -35,26 +35,34 @@ async def master_ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         history.append({'role': 'assistant', 'content': ai_response_text})
 
         if "<ORDEN_FINALIZADA>" in ai_response_text:
-            logger.info(f"IA ha finalizado el pedido para el usuario {user_id}")
+            logger.info(f"IA ha finalizado el pedido. Respuesta completa: {ai_response_text}")
             try:
-                json_part = ai_response_text.split('<ORDEN_FINALIZADA>')[1].strip()
-                cleaned_json_part = re.sub(r'```(json)?\s*|\s*```', '', json_part).strip()
+                # --- LÓGICA DE EXTRACCIÓN MEJORADA ---
+                # Buscamos el JSON de forma más robusta, ignorando texto extra.
+                text_after_tag = ai_response_text.split('<ORDEN_FINALIZADA>', 1)[1]
+                
+                start_index = text_after_tag.find('{')
+                end_index = text_after_tag.rfind('}')
 
-                if not cleaned_json_part:
-                    logger.warning("La IA envió la etiqueta de finalización pero no el JSON.")
-                    await update.message.reply_text("¡Uy! Parece que olvidé los detalles. 🤔 ¿Podrías decir 'eso es todo' una vez más?")
+                if start_index == -1 or end_index == -1:
+                    logger.error("No se pudo encontrar un objeto JSON válido en la respuesta de la IA.")
+                    await update.message.reply_text(
+                        "¡Ay, caramba! Entendí que terminaste, pero los datos del pedido vinieron incompletos. "
+                        "Por favor, di **'confirmar pedido'** para intentarlo de nuevo."
+                    )
                     return
 
-                order_data = json.loads(cleaned_json_part)
+                json_string = text_after_tag[start_index : end_index + 1]
+                logger.info(f"JSON extraído para procesar: {json_string}")
+
+                order_data = json.loads(json_string)
                 order_data['costo_delivery'] = context.user_data.get('delivery_fee', 0)
                 
                 pedido_items_list = order_data.get("pedido_items", [])
                 pedido_lines = []
                 for item in pedido_items_list:
                     if isinstance(item, dict):
-                        # --- LÍNEA CORREGIDA ---
-                        # Ahora busca la clave "nombre" que la IA está usando.
-                        line = f"- {item.get('cantidad', 1)}x {item.get('nombre', 'Artículo desconocido')}"
+                        line = f"- {item.get('cantidad', 1)}x {item.get('producto', 'Producto no especificado')}"
                         pedido_lines.append(line)
                     elif isinstance(item, str):
                         line = f"- 1x {item}"
@@ -67,10 +75,17 @@ async def master_ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 await update.message.reply_text("¡Pedido completado y enviado a la cocina! Gracias por tu compra. 👨‍🍳")
                 context.user_data.clear()
 
-            except Exception as e:
-                logger.error(f"Error al procesar la orden finalizada: {e}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Error de decodificación de JSON: {e}. String que se intentó decodificar: '{json_string}'")
                 await update.message.reply_text(
-                    "¡Ay, caramba! Entendí que terminaste, pero los datos del pedido vinieron con un error. "
+                    "¡Ay, caramba! Entendí que terminaste, pero los datos del pedido vinieron con un formato incorrecto. "
+                    "Por favor, di **'confirmar pedido'** para intentarlo de nuevo."
+                )
+                return
+            except Exception as e:
+                logger.error(f"Error inesperado al procesar la orden finalizada: {e}")
+                await update.message.reply_text(
+                    "¡Ay, caramba! Hubo un problema inesperado al procesar tu pedido. "
                     "Por favor, di **'confirmar pedido'** para intentarlo de nuevo."
                 )
                 return
@@ -86,9 +101,8 @@ async def mark_as_delivered_handler(update: Update, context: ContextTypes.DEFAUL
     """Maneja el clic en el botón 'Marcar como Entregado'."""
     query = update.callback_query
     await query.answer("¡Pedido marcado como entregado!")
-    original_text = query.message.text_markdown_v2
-    escaped_original_text = escape_markdown(original_text, version=2)
-    new_text = f"✅ *ENTREGADO* ✅\n\n~{escaped_original_text}~"
+    original_text = query.message.text
+    new_text = f"✅ *ENTREGADO* ✅\n\n~{original_text}~"
     await query.edit_message_text(text=new_text, parse_mode='MarkdownV2')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
